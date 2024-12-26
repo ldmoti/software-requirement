@@ -1,0 +1,38 @@
+@startuml
+participant "AuthService" as AS
+participant "UserRepository" as UR
+participant "RoleRepository" as RR
+database Database
+
+-> AS: Request User Permissions (userId) ' Trigger - could be from various parts of the application.
+activate AS
+AS -> UR: getUserById(userId) 'Retrieve user data
+activate UR
+UR -> Database: Select User
+activate Database
+Database --> UR: User Data (if found)
+deactivate Database
+UR --> AS: User Data (if found)
+deactivate UR
+
+alt User found
+  AS -> RR: getRolesForUser(userId) ' Retrieve user roles
+  activate RR
+  RR -> Database: Select User Roles
+  activate Database
+  Database --> RR: User Roles (e.g., list of roleIds)
+  deactivate Database
+  RR --> AS: User Roles
+  deactivate RR
+
+  AS -> AS: aggregatePermissions(userRoles)  ' Combine permissions from all roles (including handling inheritance)
+  AS --> : User Permissions (list of permissions) ' Return the aggregated permissions
+  deactivate AS
+else User not found
+ AS --> : User Not Found Error ' Return or throw an error
+ deactivate AS
+end
+
+
+
+@enduml

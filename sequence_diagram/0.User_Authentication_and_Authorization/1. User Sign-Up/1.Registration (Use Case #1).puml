@@ -1,0 +1,53 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "UserController" as UC
+participant "UserService" as US
+participant "UserRepository" as UR
+database Database
+participant "EmailService" as ES
+participant "Communication Channels" as CC
+
+
+U -> UI: Enters registration details (email, password, etc.)
+activate UI
+UI -> UC: registerUser(userDetails)
+activate UC
+UC -> US: registerUser(userDetails)
+activate US
+US -> US: validateUserDetails(userDetails)  ' Validate email, password strength, etc.
+alt Valid User Details
+    US -> UR: createUser(user)
+    activate UR
+    UR -> Database: Insert User Record
+    activate Database
+    Database --> UR: userId
+    deactivate Database
+    UR --> US: userId
+    deactivate UR
+
+    US -> ES: sendConfirmationEmail(user)  'Optional: Send confirmation email
+    activate ES
+    ES -> CC: Send Email
+    activate CC
+    CC --> ES: Email Sent
+    deactivate CC
+    ES --> US: Email Sent
+    deactivate ES
+
+
+    US --> UC: User Registered (userId)
+    deactivate US
+    UC --> UI: Display Success Message
+    deactivate UC
+    UI --> U: Show confirmation/redirect to login
+    deactivate UI
+else Invalid User Details
+    US --> UC: Invalid User Details (errors)
+    deactivate US
+    UC --> UI: Display Error Messages (errors)
+    deactivate UC
+    UI --> U: Show error messages
+    deactivate UI
+end
+@enduml

@@ -1,0 +1,48 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+database Database
+participant "ProjectService" as PS
+participant "TaskService" as TS
+
+U -> UI: Requests Project Progress Report (projectId, filters, format)
+activate UI
+UI -> RC: generateReport(projectId, filters, format)
+activate RC
+RC -> RS: generateProjectProgressReport(projectId, filters, format)
+activate RS
+
+RS -> PS: getProjectById(projectId) ' Retrieve basic project information
+activate PS
+PS -> Database: Select Project
+activate Database
+Database --> PS: Project Data
+deactivate Database
+PS --> RS: Project Data
+deactivate PS
+
+RS -> TS: getTasksForProject(projectId, filters) ' Retrieve task data
+activate TS
+TS -> Database: Select Tasks (filters)
+activate Database
+Database --> TS: Task Data
+deactivate Database
+TS --> RS: Task Data
+deactivate TS
+
+RS -> RG: generateReport(projectData, taskData, format)
+activate RG
+RG -> RG: calculateProjectProgress(taskData) ' Calculate overall progress
+RG -> RG: formatReport(reportData, format)  ' Format as PDF, CSV, etc.
+RG --> RS: generatedReport (bytes)
+deactivate RG
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+@enduml

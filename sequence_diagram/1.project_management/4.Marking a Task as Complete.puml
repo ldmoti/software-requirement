@@ -1,0 +1,75 @@
+@startuml
+actor "User" as U
+participant "GojoCraft UI" as UI
+participant "TaskController" as TC
+participant "TaskService" as TS
+participant "TaskRepository" as TR
+database Database
+participant "ProjectService" as PS 
+participant "NotificationService" as NS
+participant "WorkflowEngine" as WE
+participant "Communication Channels" as CC
+
+U -> UI: Mark Task as Complete (taskId)
+activate UI
+UI -> TC: markTaskComplete(taskId)
+activate TC
+TC -> TS: markTaskComplete(taskId)
+activate TS
+TS -> TR: getTaskById(taskId)
+activate TR
+TR -> Database: Select Task
+activate Database
+Database --> TR: Task Data
+deactivate Database
+TR --> TS: Task Data
+deactivate TR
+
+alt Task found
+    TS -> TS: updateTaskStatus(task, "completed")
+    TS -> TR: saveTask(task)
+    activate TR
+    TR -> Database: Update Task
+    activate Database
+    Database --> TR: Success/Failure
+    deactivate Database
+    TR --> TS: Success/Failure
+    deactivate TR
+
+    TS -> PS: updateProjectProgress(projectId)  
+    activate PS
+    PS --> TS: Project Progress Updated
+    deactivate PS
+
+    TS -> NS: sendTaskCompletedNotification(taskId, relevantUsers)
+    activate NS
+    NS -> CC: Send Notifications
+    activate CC
+    CC --> NS: Notifications Sent
+    deactivate CC
+    NS --> TS: Notifications Sent
+    deactivate NS
+
+    alt Workflow triggers enabled
+      TS -> WE: triggerWorkflow(taskId)  
+      activate WE
+      WE --> TS: Workflow Triggered
+      deactivate WE
+    end
+
+    TS --> TC: Task Completed
+    deactivate TS  
+    TC --> UI: Display Success Message
+    deactivate TC 
+    UI --> U: Show updated task list
+    deactivate UI
+
+else Task not found
+    TS --> TC: Task Not Found
+    deactivate TS
+    TC --> UI: Display "Task Not Found" Error
+    deactivate TC 
+    UI --> U: Show error message
+    deactivate UI
+end
+@enduml

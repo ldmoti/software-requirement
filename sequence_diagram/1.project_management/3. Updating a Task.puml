@@ -1,0 +1,58 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "TaskController" as TC
+participant "TaskService" as TS
+participant "TaskRepository" as TR
+database Database
+participant "NotificationService" as NS
+participant "Communication Channels" as CC
+
+PM -> UI: Request to update task (taskId, updatedDetails)
+activate UI
+UI -> TC: updateTask(taskId, updatedDetails)
+activate TC
+TC -> TS: updateTask(taskId, updatedDetails)
+activate TS
+TS -> TR: getTaskById(taskId)
+activate TR
+TR -> Database: Select Task
+activate Database
+Database --> TR: Task data (if found)
+deactivate Database
+TR --> TS: Task data (if found)
+deactivate TR
+
+alt Task found
+    TS -> TS: updateTaskDetails(task, updatedDetails)
+    TS -> TR: saveTask(task)
+    activate TR
+    TR -> Database: Update Task Record
+    activate Database
+    Database --> TR: Success/Failure
+    deactivate Database
+    TR --> TS: Success/Failure
+    deactivate TR
+    TS -> NS: sendTaskUpdateNotification(task, changedFields, relevantUsers)
+    activate NS
+    NS -> CC: Send Notifications
+    activate CC
+    CC --> NS: Notifications Sent
+    deactivate CC
+    NS --> TS: Notifications Sent
+    deactivate NS
+    TS --> TC: Task Updated
+    deactivate TS
+    TC --> UI: Display Success Message
+    deactivate TC
+    UI --> PM: Show updated task
+    deactivate UI
+else Task not found
+    TS --> TC: Task Not Found
+    deactivate TS
+    TC --> UI: Display "Task Not Found" Error
+    deactivate TC
+    UI --> PM: Show error message
+    deactivate UI
+end
+@enduml

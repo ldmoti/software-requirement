@@ -1,0 +1,49 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "CostEstimateController" as CEC
+participant "CostEstimateService" as CES
+participant "CostEstimateRepository" as CER
+database Database
+
+PM -> UI: Update Cost Estimate Request (costEstimateId, updatedCostItems)
+activate UI
+UI -> CEC: updateCostEstimate(costEstimateId, updatedCostItems)
+activate CEC
+CEC -> CES: updateCostEstimate(costEstimateId, updatedCostItems)
+activate CES
+CES -> CER: getCostEstimateById(costEstimateId)
+activate CER
+CER -> Database: Select Cost Estimate
+activate Database
+Database --> CER: Cost Estimate Data (if found)
+deactivate Database
+CER --> CES: Cost Estimate Data (if found)
+deactivate CER
+
+alt Cost Estimate found
+    CES -> CES: updateCostItems(costEstimate, updatedCostItems)
+    CES -> CES: calculateTotalCost(costEstimate.costItems) ' Recalculate total cost
+    CES -> CER: saveCostEstimate(costEstimate)
+    activate CER
+    CER -> Database: Update Cost Estimate
+    activate Database
+    Database --> CER: Success/Failure
+    deactivate Database
+    CER --> CES: Success/Failure
+    deactivate CER
+    CES --> CEC: Cost Estimate Updated
+    deactivate CES
+    CEC --> UI: Display Success Message
+    deactivate CEC
+    UI --> PM: Show updated cost estimate
+    deactivate UI
+else Cost Estimate not found
+    CES --> CEC: Cost Estimate Not Found
+    deactivate CES
+    CEC --> UI: Display "Cost Estimate Not Found" Error
+    deactivate CEC
+    UI --> PM: Show error message
+    deactivate UI
+end
+@enduml

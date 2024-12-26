@@ -1,0 +1,27 @@
+@startuml
+participant "BudgetMonitoringService" as BMS  ' Or a similar service/component
+participant "CostEstimateRepository" as CER
+participant "ExpenseRepository" as ER
+database Database
+
+BMS -> CER: getBudgetedCost(projectId) ' Retrieve budgeted cost for the project
+activate CER
+CER -> Database: Select Budgeted Cost
+activate Database
+Database --> CER: budgetedCost
+deactivate Database
+CER --> BMS: budgetedCost
+deactivate CER
+
+BMS -> ER: getActualCost(projectId) 'Retrieve actual costs incurred
+activate ER
+ER -> Database: Select Actual Costs
+activate Database
+Database --> ER: actualCost
+deactivate Database
+ER --> BMS: actualCost
+deactivate ER
+
+BMS -> BMS: calculateCostVariance(budgetedCost, actualCost) ' Perform calculation
+BMS -> BMS: analyzeVariance(costVariance)  'Optional: further analysis (thresholds, etc.)
+@enduml

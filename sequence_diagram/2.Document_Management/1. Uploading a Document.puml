@@ -1,0 +1,30 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "DocumentController" as DC
+participant "DocumentService" as DS
+participant "Cloud Storage" as CS
+database Database
+
+U -> UI: Uploads document (project/phase, file)
+activate UI
+UI -> DC: uploadDocument(projectId, phaseId, file)
+activate DC
+DC -> DS: saveDocument(projectId, phaseId, file)
+activate DS
+DS -> DS: authenticateUser() ' Implicit or explicit authentication check
+DS -> CS: uploadFile(file)
+activate CS
+CS --> DS: fileURL  ' URL of the uploaded file
+deactivate CS
+DS -> Database: Save document metadata (documentName, fileURL, etc.)
+activate Database
+Database --> DS: documentId
+deactivate Database
+DS --> DC: Document Uploaded (documentId)
+deactivate DS
+DC --> UI: Display Success Message
+deactivate DC
+UI --> U: Show uploaded document
+deactivate UI
+@enduml

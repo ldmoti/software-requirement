@@ -1,0 +1,40 @@
+@startuml
+actor "User A" as UA
+participant "GojoCraft UI" as UI
+participant "ChatController" as CC
+participant "ChatService" as CS
+participant "MessageQueue/WebSocket" as MQ  ' Use a more descriptive name
+participant "User B's UI" as UBUI
+database Database ' For persistent storage of chat history
+
+UA -> UI: Enters message (recipient, messageText)
+activate UI
+UI -> CC: sendMessage(recipient, messageText)
+activate CC
+CC -> CS: sendMessage(senderId, recipient, messageText)
+activate CS
+
+' Publish message for real-time delivery
+CS -> MQ: publishMessage(senderId, recipient, messageText)
+activate MQ
+MQ -> UBUI: deliverMessage(message)  ' Real-time delivery via WebSocket (or similar)
+activate UBUI
+UBUI --> UA: Message delivered confirmation (Optional) 
+deactivate UBUI
+MQ --> CS: Message published
+deactivate MQ
+
+' Persist the message for chat history
+CS -> Database: saveMessage(senderId, recipient, messageText)
+activate Database
+Database --> CS: messageId
+deactivate Database
+CS --> CC: Message Sent (messageId)
+deactivate CS
+
+CC --> UI: Display Sent Message
+deactivate CC
+UI --> UA: Show sent message in chat
+deactivate UI
+
+@enduml

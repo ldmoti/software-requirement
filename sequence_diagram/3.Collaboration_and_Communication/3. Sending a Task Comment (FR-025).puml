@@ -1,0 +1,57 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "CommentController" as CoC
+participant "CommentService" as CoS
+participant "TaskService" as TS
+participant "NotificationService" as NS
+participant "Communication Channels" as CC
+database Database
+
+
+U -> UI: Adds comment to task (taskId, commentText)
+activate UI
+UI -> CoC: addComment(taskId, commentText, userId) ' Include userId for auditing/permissions
+activate CoC
+CoC -> CoS: addComment(taskId, commentText, userId)
+activate CoS
+CoS -> TS: getTaskById(taskId) ' Check if task exists and user has permission
+activate TS
+TS -> Database: Select Task
+activate Database
+Database --> TS: Task Data (if found)
+deactivate Database
+TS --> CoS: Task Data (if found)
+deactivate TS
+
+alt Task Found
+    CoS -> Database: Save Comment (taskId, userId, commentText)
+    activate Database
+    Database --> CoS: commentId
+    deactivate Database
+    CoS -> NS: sendCommentNotification(taskId, commentId, relevantUsers) ' Notify assigned users, etc.
+    activate NS
+    NS -> CC: Send Notifications
+    activate CC
+    CC --> NS: Notifications Sent
+    deactivate CC
+    NS --> CoS: Notifications Sent
+    deactivate NS
+    CoS --> CoC: Comment Added (commentId)
+    deactivate CoS
+    CoC --> UI: Display new comment
+    deactivate CoC
+    UI --> U: Show added comment
+    deactivate UI
+else Task Not Found
+    CoS --> CoC: Task not found
+    deactivate CoS
+    CoC --> UI: Display error "Task Not Found"
+    deactivate CoC
+    UI --> U: Show error message
+    deactivate UI
+end
+
+
+
+@enduml

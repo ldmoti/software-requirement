@@ -1,0 +1,49 @@
+@startuml
+title 6. Generate KPI Report (FR-062)
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+participant "KPIService" as KS
+database Database
+
+
+U -> UI: Request KPI Report (projectId, kpiIds, filters, format)
+activate UI
+UI -> RC: generateKPIReport(projectId, kpiIds, filters, format)
+activate RC
+RC -> RS: generateKPIReport(projectId, kpiIds, filters, format)
+activate RS
+RS -> KS: getKPIData(projectId, kpiIds, filters)  'Retrieve KPI definitions and data
+activate KS
+KS -> Database: Select KPI Definitions
+activate Database
+Database --> KS: KPI Definitions
+deactivate Database
+
+loop for each KPI definition
+    KS -> Database: Retrieve data for KPI calculation (filters)   'Data retrieval for each KPI
+    activate Database
+    Database --> KS: KPI Data
+    deactivate Database
+    KS -> KS: calculateKPIValue(kpiDefinition, kpiData)
+end
+
+KS --> RS: kpiValues
+deactivate KS
+
+
+RS -> RG: generateReport(kpiValues, format)
+activate RG
+RG -> RG: formatReport(kpiValues, format)  'Format the KPI values for display
+RG --> RS: generatedReport
+deactivate RG
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+
+@enduml

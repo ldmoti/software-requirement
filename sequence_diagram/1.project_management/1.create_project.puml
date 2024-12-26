@@ -1,0 +1,40 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "ProjectController" as PC
+participant "ProjectService" as PS
+participant "ProjectRepository" as PR
+database Database
+participant "Communication Channels" as CC ' For potential notifications (e.g., project created)
+
+PM -> UI: Create Project Request (project details)
+activate UI
+UI -> PC: createProject(projectDetails)
+activate PC
+PC -> PS: createProject(projectDetails)
+activate PS
+PS -> PS: validateProjectDetails(projectDetails)
+alt Valid details
+    PS -> PR: saveProject(project)
+    activate PR
+    PR -> Database: Insert Project Record
+    activate Database
+    Database --> PR: projectId
+    deactivate Database
+    PR --> PS: projectId
+    deactivate PR
+    PS --> PC: Project Created (projectId)
+    deactivate PS  
+    PC --> UI: Display Success Message
+    deactivate PC 
+    UI --> PM: Redirect to new project page
+    deactivate UI
+else Invalid details
+    PS --> PC: Invalid Project Details
+    deactivate PS
+    PC --> UI: Display Error Message
+    deactivate PC 
+    UI --> PM: Show error message
+    deactivate UI
+end
+@enduml

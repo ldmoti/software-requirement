@@ -1,0 +1,30 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "CostEstimateController" as CEC
+participant "CostEstimateService" as CES
+participant "CostEstimateRepository" as CER
+database Database
+
+PM -> UI: Create Cost Estimate Request (projectId, costItems)
+activate UI
+UI -> CEC: createCostEstimate(projectId, costItems)
+activate CEC
+CEC -> CES: createCostEstimate(projectId, costItems)
+activate CES
+CES -> CES: calculateTotalCost(costItems) ' Calculate total estimated cost
+CES -> CER: saveCostEstimate(costEstimate)
+activate CER
+CER -> Database: Insert Cost Estimate
+activate Database
+Database --> CER: costEstimateId
+deactivate Database
+CER --> CES: costEstimateId
+deactivate CER
+CES --> CEC: Cost Estimate Created (costEstimateId)
+deactivate CES
+CEC --> UI: Display Success Message
+deactivate CEC
+UI --> PM: Show new cost estimate
+deactivate UI
+@enduml

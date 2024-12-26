@@ -1,0 +1,24 @@
+@startuml
+participant "NotificationService" as NS
+participant "Communication Channels" as CC
+database Database
+
+
+-> NS: Trigger Event (e.g., task assigned, status update, deadline) 'Start with a trigger
+activate NS
+NS -> NS: getNotificationRecipients(eventDetails)  ' Determine who to notify
+NS -> NS: createNotificationMessage(eventDetails)  ' Format the notification message
+loop for each recipient
+    NS -> CC: sendMessage(recipient, message) ' Send via appropriate channel (email, SMS, etc.)
+    activate CC
+    CC --> NS: Delivery Status (success/failure)
+    deactivate CC
+    NS -> Database: logNotification(recipient, message, status) 'Log notification attempt
+    activate Database
+    Database --> NS: Success
+    deactivate Database
+end
+deactivate NS
+
+
+@enduml

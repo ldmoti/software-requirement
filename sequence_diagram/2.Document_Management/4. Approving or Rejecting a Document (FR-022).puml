@@ -1,0 +1,70 @@
+@startuml
+actor Approver as A
+participant "GojoCraft UI" as UI
+participant "DocumentController" as DC
+participant "DocumentService" as DS
+participant "WorkflowEngine" as WE
+participant "NotificationService" as NS
+participant "Communication Channels" as CC
+
+A -> UI: Approves/Rejects document (documentId, approvalDecision)
+activate UI
+UI -> DC: approveOrRejectDocument(documentId, approvalDecision, approverId)
+activate DC
+DC -> DS: approveOrRejectDocument(documentId, approvalDecision, approverId)
+activate DS
+DS -> WE: processApprovalDecision(documentId, approvalDecision, approverId)
+activate WE
+WE -> Database: Update document status (approved/rejected)
+activate Database
+Database --> WE: Success
+deactivate Database
+
+alt Approval Decision is "Approved"
+    WE -> WE: checkIfFinalApproval(documentId)
+    alt Is Final Approval
+        WE -> NS: sendDocumentApprovedNotification(documentId, relevantUsers)  ' Notify relevant users (e.g., submitter)
+         activate NS
+        NS -> CC: Send Notification
+        activate CC
+        CC --> NS: Notification Sent
+        deactivate CC
+        NS --> WE: Notification sent
+        deactivate NS
+    else Not Final Approval
+       WE -> NS: sendApprovalNotification(nextApprover, documentId)  ' Notify the next approver in the workflow
+       activate NS
+       NS -> CC: Send notification
+       activate CC
+       CC --> NS: Notification sent
+       deactivate CC
+       NS --> WE: Notification sent
+       deactivate NS
+    end
+
+else  Approval Decision is "Rejected"
+ WE -> NS: sendDocumentRejectedNotification(documentId, relevantUsers)
+ activate NS
+ NS -> CC: Send notification
+ activate CC
+ CC --> NS: Notification sent
+ deactivate CC
+ NS --> WE: Notification sent
+ deactivate NS
+
+
+end
+
+
+
+WE --> DS: Approval processed
+deactivate WE
+DS --> DC: Approval/Rejection processed
+deactivate DS
+DC --> UI: Display confirmation message
+deactivate DC
+UI --> A: Show confirmation
+deactivate UI
+
+
+@enduml

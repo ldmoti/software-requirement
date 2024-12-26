@@ -1,0 +1,57 @@
+@startuml
+actor "Field Worker" as FW
+participant "Mobile App" as MA
+participant "SynchronizationService" as SS
+participant "DataRepository" as DR
+database Database
+participant "ConflictResolver" as CR
+
+FW -> MA: Enters data (offline)
+activate MA
+MA -> MA: Store data in local storage (e.g., IndexedDB)
+
+FW -> MA: Requests synchronization
+activate MA
+MA -> MA: Check network connection
+
+alt Network connection available
+    MA -> SS: synchronizeData(offlineData)
+    activate SS
+    SS -> MA: Retrieve offline data
+    activate MA
+    MA --> SS: offlineData
+    deactivate MA
+    loop for each data item in offlineData
+        SS -> DR: saveData(dataItem)
+        activate DR
+        DR -> Database: Attempt to save data
+        activate Database
+        alt Conflict detected
+            Database --> DR: Conflict (serverData)
+            deactivate Database
+            DR -> CR: resolveConflict(localData, serverData)
+            activate CR
+            CR --> DR: resolvedData
+            deactivate CR
+            DR -> Database: Save resolvedData
+            activate Database
+            Database --> DR: Success/Failure
+            deactivate Database
+        else No conflict
+            Database --> DR: Success
+            deactivate Database
+        end
+        DR --> SS: Save Result (success/failure)
+        deactivate DR
+    end
+    SS --> MA: Synchronization Complete (results)
+    deactivate SS
+    MA --> FW: Display synchronization status (results)
+    deactivate MA
+
+else No network connection
+    MA --> FW: Display "Offline - Sync Pending" message
+    deactivate MA
+end
+
+@enduml

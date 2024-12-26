@@ -1,0 +1,45 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ProjectController" as PC
+participant "ProjectService" as PS
+participant "External File Service (e.g., BIM 360)" as EFS
+database Database
+
+U -> UI: Link CAD/BIM file (projectId, fileURL) ' Could also be a file ID from the external service
+activate UI
+UI -> PC: linkFileToProject(projectId, fileURL)
+activate PC
+PC -> PS: linkFileToProject(projectId, fileURL, userId) ' Add userId for auditing
+activate PS
+
+PS -> PS: validateFileURL(fileURL) ' Ensure the URL is valid/accessible
+alt Valid File URL
+
+    PS -> EFS: getFileInfo(fileURL) 'Optional: Get file metadata from external service
+    activate EFS
+    EFS --> PS: File Info (fileName, fileSize, etc.)
+    deactivate EFS
+
+    PS -> Database: Create File Link record (projectId, fileURL, fileInfo)
+    activate Database
+    Database --> PS: linkId
+    deactivate Database
+    PS --> PC: File Linked Successfully
+    deactivate PS
+    PC --> UI: Display Success Message
+    deactivate PC
+    UI --> U: Show linked file in project
+    deactivate UI
+
+else Invalid File URL
+    PS --> PC: Invalid File URL
+    deactivate PS
+    PC --> UI: Display Error message
+    deactivate PC
+    UI --> U: Show error message
+    deactivate UI
+end
+
+
+@enduml

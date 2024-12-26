@@ -1,0 +1,26 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ChatController" as CC
+participant "ChatService" as CS
+database Database
+
+U -> UI: Requests chat history (chatId, pagination) ' Could be project-specific or user-specific chat ID
+activate UI
+UI -> CC: getChatHistory(chatId, pagination)
+activate CC
+CC -> CS: getChatHistory(chatId, pagination)
+activate CS
+CS -> Database: retrieveMessages(chatId, pagination) ' Retrieve messages from database with pagination
+activate Database
+Database --> CS: messages (paginated)
+deactivate Database
+CS -> CS: formatMessages(messages) ' Format messages for display (e.g., timestamps, user info)
+CS --> CC: formattedMessages
+deactivate CS
+CC --> UI: formattedMessages
+deactivate CC
+UI --> U: Display chat history
+deactivate UI
+
+@endumls

@@ -1,0 +1,48 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+database Database
+participant "BudgetService" as BS
+participant "ExpenseService" as ES
+
+U -> UI: Requests Budget Report (projectId, filters, format)
+activate UI
+UI -> RC: generateReport(projectId, filters, format)
+activate RC
+RC -> RS: generateBudgetReport(projectId, filters, format)
+activate RS
+
+RS -> BS: getBudgetForProject(projectId)
+activate BS
+BS -> Database: Select Budget
+activate Database
+Database --> BS: Budget Data
+deactivate Database
+BS --> RS: Budget Data
+deactivate BS
+
+RS -> ES: getExpensesForProject(projectId, filters)
+activate ES
+ES -> Database: Select Expenses (filters)
+activate Database
+Database --> ES: Expense Data
+deactivate Database
+ES --> RS: Expense Data
+deactivate ES
+
+RS -> RG: generateReport(budgetData, expenseData, format)
+activate RG
+RG -> RG: calculateCostVariances(budgetData, expenseData)  ' Calculate variances, totals
+RG -> RG: formatReport(reportData, format)
+RG --> RS: generatedReport
+deactivate RG
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+@enduml

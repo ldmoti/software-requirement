@@ -1,0 +1,49 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "DocumentController" as DC
+participant "DocumentService" as DS
+participant "WorkflowEngine" as WE
+participant "NotificationService" as NS
+participant "Communication Channels" as CC
+
+U -> UI: Submits document for approval (documentId, approverIds)
+activate UI
+UI -> DC: submitForApproval(documentId, approverIds)
+activate DC
+DC -> DS: initiateApprovalWorkflow(documentId, approverIds, userId)  ' Include userId for permissions/auditing
+activate DS
+DS -> DS: checkUserPermission(userId, documentId)  ' Check if the user has permission to submit
+alt User has permission
+    DS -> WE: startWorkflow(documentId, approverIds)
+    activate WE
+    WE -> WE: createApprovalTasks(approverIds)
+    WE -> Database:  Update document status to 'submitted'
+    activate Database
+    Database --> WE : Success
+    deactivate Database
+    WE -> NS: sendApprovalNotification(firstApprover, documentId) 'Notify the first approver
+    activate NS
+    NS -> CC: Send notification
+    activate CC
+    CC --> NS: Notification sent
+    deactivate CC
+    NS --> WE: Notification sent
+    deactivate NS
+    WE --> DS: Workflow started
+    deactivate WE
+    DS --> DC:  Document submitted for approval
+    deactivate DS
+    DC --> UI: Display confirmation message
+    deactivate DC
+    UI --> U: Show confirmation
+    deactivate UI
+else User does not have permission
+    DS --> DC:  Permission Denied
+    deactivate DS
+    DC --> UI: Display "Permission Denied" Error
+    deactivate DC
+    UI --> U: Show error message
+    deactivate UI
+end
+@enduml

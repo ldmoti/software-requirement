@@ -1,0 +1,50 @@
+@startuml
+title 4. Generate Safety Report (FR-042)
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+database Database
+participant "SafetyService" as SS
+
+
+U -> UI: Requests Safety Report (projectId, dateRange, reportType, format)
+activate UI
+UI -> RC: generateReport(projectId, dateRange, reportType, format)
+activate RC
+RC -> RS: generateSafetyReport(projectId, dateRange, reportType, format)
+activate RS
+
+RS -> SS: getIncidentReports(projectId, dateRange, reportType)
+activate SS
+SS -> Database: Select Incident Reports (filter by project, date, type)
+activate Database
+Database --> SS: Incident Report Data
+deactivate Database
+
+alt reportType = "Checklist"
+    SS -> Database: Select Safety Checklist Data (filter by project, date)
+    activate Database
+    Database --> SS: Safety Checklist Data
+    deactivate Database
+end note right: Retrieve checklist data only if the report type is "Checklist"
+
+
+SS --> RS: Incident Report Data (and Checklist data if requested)
+deactivate SS
+
+RS -> RG: generateReport(incidentData, checklistData, format)
+activate RG
+RG -> RG: processData(incidentData, checklistData, reportType) 'Calculations, aggregations, etc.
+RG -> RG: formatReport(processedData, format)
+RG --> RS: generatedReport
+deactivate RG
+
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+@enduml

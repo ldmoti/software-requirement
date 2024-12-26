@@ -1,0 +1,42 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "ExpenseController" as EC
+participant "ExpenseService" as ES
+participant "ExpenseRepository" as ER
+database Database
+
+PM -> UI: Record Actual Cost (costEstimateId, expenseDetails)
+activate UI
+UI -> EC: recordActualCost(costEstimateId, expenseDetails)
+activate EC
+EC -> ES: recordActualCost(costEstimateId, expenseDetails)
+activate ES
+ES -> ES: validateExpenseDetails(expenseDetails)
+
+alt Valid Expense Details
+    ES -> ER: saveExpense(expense)
+    activate ER
+    ER -> Database: Insert Expense Record
+    activate Database
+    Database --> ER: expenseId
+    deactivate Database
+    ER --> ES: expenseId
+    deactivate ER
+    ES --> EC: Actual Cost Recorded (expenseId)
+    deactivate ES
+    EC --> UI: Display Success Message
+    deactivate EC
+    UI --> PM: Show recorded cost
+    deactivate UI
+else Invalid Expense Details
+    ES --> EC: Invalid Expense Details
+    deactivate ES
+    EC --> UI: Display Error Message
+    deactivate EC
+    UI --> PM: Show error message
+    deactivate UI
+end
+
+
+@enduml

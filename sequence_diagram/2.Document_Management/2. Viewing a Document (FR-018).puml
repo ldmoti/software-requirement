@@ -1,0 +1,56 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "DocumentController" as DC
+participant "DocumentService" as DS
+participant "Cloud Storage" as CS
+database Database
+
+U -> UI: Request to view document (documentId)
+activate UI
+UI -> DC: getDocument(documentId)
+activate DC
+DC -> DS: getDocument(documentId, userId)
+activate DS
+
+DS -> Database: Retrieve Document Metadata (documentId)
+activate Database
+Database --> DS: Document Metadata (if found)
+deactivate Database
+
+alt Document Found
+    DS -> DS: checkUserAccess(userId, documentId)
+
+    alt User Has Access
+        DS -> CS: getDocumentContent(documentId) ' Or getDocumentURL()
+        activate CS
+        CS --> DS: documentContent (or documentURL)
+        deactivate CS
+        DS --> DC: documentContent (or documentURL)
+        deactivate DS
+        DC --> UI: documentContent (or documentURL)
+        deactivate DC
+
+        alt In-browser viewer
+            UI -> UI: Render document using viewer
+            UI --> U: Display Document in Viewer
+        else Direct Download
+            UI --> U: Initiate document download
+        end
+    else User Does Not Have Access
+        DS --> DC: Access Denied
+        deactivate DS
+        DC --> UI: Access Denied Error
+        deactivate DC
+        UI --> U: Access Denied Error Message
+    end
+
+else Document Not Found
+    DS --> DC: Document Not Found
+    deactivate DS
+    DC --> UI: Document Not Found Error
+    deactivate DC
+    UI --> U: Document Not Found Error Message
+end
+deactivate UI
+@enduml

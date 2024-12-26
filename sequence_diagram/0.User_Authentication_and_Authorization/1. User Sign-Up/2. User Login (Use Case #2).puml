@@ -1,0 +1,53 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "AuthenticationController" as AC
+participant "AuthenticationService" as AS
+participant "UserRepository" as UR
+database Database
+
+
+U -> UI: Enters credentials (username, password)
+activate UI
+UI -> AC: login(username, password)
+activate AC
+AC -> AS: authenticateUser(username, password)
+activate AS
+AS -> UR: getUserByUsername(username)
+activate UR
+UR -> Database: Select User
+activate Database
+Database --> UR: User data (if found)
+deactivate Database
+UR --> AS: User data (if found)
+deactivate UR
+
+alt User found
+    AS -> AS: hashPassword(password)  'Hash the entered password
+    AS -> AS: compareHashes(hashedPassword, storedHash)
+    alt Hashes match
+        AS -> AS: createSessionToken(userId, roles)  ' Create and return a session token
+        AS --> AC: sessionToken
+        deactivate AS
+        AC --> UI: Login Successful (sessionToken)
+        deactivate AC
+        UI --> U: Redirect to Dashboard (with sessionToken)
+        deactivate UI
+    else Hashes don't match
+        AS --> AC: Invalid Password
+        deactivate AS
+        AC --> UI: Display "Invalid Password"
+        deactivate AC
+        UI --> U: Show error message
+        deactivate UI
+    end
+else User not found
+    AS --> AC: User Not Found
+    deactivate AS
+    AC --> UI: Display "User Not Found"
+    deactivate AC
+    UI --> U: Show error message
+    deactivate UI
+end
+
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+actor "Project Manager" as PM
+participant "GojoCraft UI" as UI
+participant "TaskController" as TC
+participant "TaskService" as TS
+participant "TaskRepository" as TR
+database Database
+participant "NotificationService" as NS
+participant "Communication Channels" as CommunicationChannels
+
+PM -> UI: Create Task Request (project, phase, task details)
+activate UI
+UI -> TC: createTask(projectId, phaseId, taskDetails)
+activate TC
+TC -> TS: createTask(projectId, phaseId, taskDetails)
+activate TS
+TS -> TR: saveTask(task)
+activate TR
+TR -> Database: Insert Task Record
+activate Database
+Database --> TR: taskId
+deactivate Database
+TR --> TS: taskId
+deactivate TR  ' Deactivate TaskRepository
+TS -> NS: sendTaskAssignmentNotification(taskId, assignedUsers)
+activate NS
+NS -> CommunicationChannels: Send Notifications
+activate CommunicationChannels
+CommunicationChannels --> NS: Notifications Sent
+deactivate CommunicationChannels
+NS --> TS: Notifications Sent
+deactivate NS
+TS --> TC: Task Created (taskId)
+deactivate TS  ' Deactivate TaskService
+TC --> UI: Display Success Message
+deactivate TC   ' Deactivate TaskController
+UI --> PM: Show new task in list
+deactivate UI
+@enduml

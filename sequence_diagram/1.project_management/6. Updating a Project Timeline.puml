@@ -1,0 +1,44 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "TimelineController" as TC
+participant "TimelineService" as TS
+participant "TaskRepository" as TR
+database Database
+
+U -> UI: Request View Timeline (projectId)
+activate UI
+UI -> TC: viewTimeline(projectId)
+activate TC
+TC -> TS: getTimeline(projectId)
+activate TS
+
+alt Authentication Success (FR-070)  ' Check Authentication
+    TS -> TR: getTasksForProject(projectId)
+    activate TR
+    TR -> Database: Select Tasks for Project
+    activate Database
+    Database --> TR: Task Data
+    deactivate Database
+    TR --> TS: Task Data
+    deactivate TR
+    TS -> TS: formatTimelineData(taskData)
+    TS --> TC: timelineData (JSON)
+    deactivate TS
+    TC --> UI: timelineData (JSON)
+    deactivate TC
+    UI -> UI: Render Timeline
+    UI --> U: Display Timeline
+deactivate UI
+else Authentication Failure (FR-070)
+    TS --> TC: Authentication Error
+    deactivate TS
+    TC --> UI: Authentication Error
+    deactivate TC
+    UI --> U: Display Authentication Error Message
+deactivate UI
+
+end
+
+
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+title 5. Generate Custom Report (FR-061)
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+participant "ReportTemplateRepository" as RTR
+database Database
+
+U -> UI: Requests Custom Report (templateId, filters, format)
+activate UI
+UI -> RC: generateCustomReport(templateId, filters, format)
+activate RC
+RC -> RS: generateCustomReport(templateId, filters, format)
+activate RS
+RS -> RTR: getReportTemplate(templateId)  'Retrieve report template
+activate RTR
+RTR -> Database: Select Report Template
+activate Database
+Database --> RTR: Report Template
+deactivate Database
+RTR --> RS: Report Template
+deactivate RTR
+
+RS -> Database: Retrieve Data (based on template and filters) 'Dynamic data retrieval
+activate Database
+Database --> RS: Data
+deactivate Database
+
+RS -> RG: generateReport(data, template, format)
+activate RG
+RG -> RG: processData(data, template) 'Dynamic processing based on template
+RG -> RG: formatReport(processedData, format)
+RG --> RS: generatedReport
+deactivate RG
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+
+@enduml

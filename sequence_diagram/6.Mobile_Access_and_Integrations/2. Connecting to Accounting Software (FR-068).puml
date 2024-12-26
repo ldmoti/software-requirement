@@ -1,0 +1,31 @@
+@startuml
+actor User as U
+participant "GojoCraft UI" as UI
+participant "IntegrationController" as IC
+participant "AccountingIntegrationService" as AIS
+participant "OAuth Provider (Accounting Software)" as OAuth
+database Database
+
+U -> UI: Initiate connection to accounting software (softwareType)
+activate UI
+UI -> IC: connectToAccountingSoftware(softwareType)
+activate IC
+IC -> AIS: connect(softwareType)
+activate AIS
+AIS -> OAuth: Redirect user for OAuth authorization
+activate OAuth
+OAuth --> U: User grants authorization (in external browser/app)
+U --> OAuth: Authorization code
+OAuth -> AIS: Exchange authorization code for access token
+AIS -> Database: Store access token securely (userId, softwareType, accessToken)
+activate Database
+Database --> AIS: Success
+deactivate Database
+AIS --> IC: Connection Successful
+deactivate AIS
+IC --> UI: Display success message
+deactivate IC
+UI --> U: Show connection status
+deactivate UI
+
+@enduml

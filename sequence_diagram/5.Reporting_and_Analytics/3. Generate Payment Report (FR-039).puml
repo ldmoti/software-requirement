@@ -1,0 +1,49 @@
+@startuml
+title 3. Generate Payment Report (FR-039)
+actor User as U
+participant "GojoCraft UI" as UI
+participant "ReportController" as RC
+participant "ReportService" as RS
+participant "ReportGenerator" as RG
+database Database
+participant "PaymentService" as PayS
+participant "InvoiceService" as InvS
+
+U -> UI: Requests Payment Report (projectId, filters, format)  'Or other criteria like date range
+activate UI
+UI -> RC: generateReport(projectId/dateRange, filters, format)
+activate RC
+RC -> RS: generatePaymentReport(projectId/dateRange, filters, format)
+activate RS
+
+RS -> PayS: getPayments(projectId/dateRange, filters)
+activate PayS
+PayS -> Database: Select Payments (filters)
+activate Database
+Database --> PayS: Payment Data
+deactivate Database
+PayS --> RS: Payment Data
+deactivate PayS
+
+RS -> InvS: getInvoices(projectId/dateRange, filters) ' To link payments to invoices (optional)
+activate InvS
+InvS -> Database: Select Invoices (filters)
+activate Database
+Database --> InvS: Invoice Data
+deactivate Database
+InvS --> RS: Invoice Data
+deactivate InvS
+
+
+RS -> RG: generateReport(paymentData, invoiceData, format) ' Include invoiceData if retrieved
+activate RG
+RG -> RG: formatReport(reportData, format)  ' Formatting, aggregations, etc. (minimal processing)
+RG --> RS: generatedReport
+deactivate RG
+RS --> RC: generatedReport
+deactivate RS
+RC --> UI: Report Generated
+deactivate RC
+UI --> U: Display/Download Report
+deactivate UI
+@enduml
